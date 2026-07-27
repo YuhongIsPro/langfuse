@@ -525,6 +525,16 @@ describe("createAgUiStream", () => {
         messageId: "assistant-message-1",
       },
       {
+        type: EventType.TOOL_CALL_RESULT,
+        messageId: "tool-result-1",
+        toolCallId: "tool-call-1",
+        content: JSON.stringify({
+          type: "silent-mcp-output",
+          output: { data: [{ id: "observation-1" }] },
+        }),
+        role: "tool",
+      },
+      {
         type: EventType.RUN_FINISHED,
         threadId: input.threadId,
         runId: input.runId,
@@ -567,6 +577,14 @@ describe("createAgUiStream", () => {
 
     expect(streamedText).toContain(EventType.MESSAGES_SNAPSHOT);
     expect(streamedText).toContain(EventType.REASONING_MESSAGE_CONTENT);
+    expect(streamedText).toContain("Output saved to /workspace/tool_calls");
+    expect(streamedText).not.toContain("observation-1");
+    expect(persistedEvents).toContainEqual(
+      expect.objectContaining({
+        type: EventType.TOOL_CALL_RESULT,
+        content: expect.stringContaining("observation-1"),
+      }),
+    );
     expect(adapterEvents.inputs).toEqual([input]);
     const { Agent } = await import("@mastra/core/agent");
     expect(Agent).toHaveBeenCalledWith(
@@ -715,6 +733,7 @@ describe("createAgUiStream", () => {
       EventType.TEXT_MESSAGE_START,
       EventType.TEXT_MESSAGE_CONTENT,
       EventType.TEXT_MESSAGE_END,
+      EventType.TOOL_CALL_RESULT,
       EventType.RUN_FINISHED,
     ]);
     expect(persistedEvents[0]).toMatchObject({
@@ -738,6 +757,8 @@ describe("createAgUiStream", () => {
       `stream:${EventType.TEXT_MESSAGE_CONTENT}`,
       `persist:${EventType.TEXT_MESSAGE_END}`,
       `stream:${EventType.TEXT_MESSAGE_END}`,
+      `persist:${EventType.TOOL_CALL_RESULT}`,
+      `stream:${EventType.TOOL_CALL_RESULT}`,
       `persist:${EventType.RUN_FINISHED}`,
       `stream:${EventType.RUN_FINISHED}`,
     ]);
@@ -775,10 +796,11 @@ describe("createAgUiStream", () => {
       EventType.REASONING_MESSAGE_START,
       EventType.REASONING_MESSAGE_CONTENT,
       EventType.REASONING_MESSAGE_END,
-      EventType.TEXT_MESSAGE_START,
-      EventType.TEXT_MESSAGE_CONTENT,
-      EventType.TEXT_MESSAGE_END,
-      EventType.RUN_FINISHED,
+        EventType.TEXT_MESSAGE_START,
+        EventType.TEXT_MESSAGE_CONTENT,
+        EventType.TEXT_MESSAGE_END,
+        EventType.TOOL_CALL_RESULT,
+        EventType.RUN_FINISHED,
     ]);
     expect(instrumentationMocks.instrumentation.end).toHaveBeenCalledWith({});
     expect(instrumentationMocks.instrumentation.flush).toHaveBeenCalled();

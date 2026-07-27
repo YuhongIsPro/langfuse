@@ -36,7 +36,10 @@ import {
 import { compactTextMessageChunks } from "@/src/ee/features/in-app-agent/server/eventCompaction";
 import { IN_APP_AGENT_REDIRECT_TOOL_NAME } from "@/src/ee/features/in-app-agent/constants";
 import { safeJsonParse } from "@/src/utils/json";
-import { IN_APP_AGENT_SANDBOX_TOOL_NAMES } from "@/src/ee/features/in-app-agent/server/tools";
+import {
+  getPublicInAppAgentMcpToolResultContent,
+  IN_APP_AGENT_SANDBOX_TOOL_NAMES,
+} from "@/src/ee/features/in-app-agent/server/tools";
 
 // Keep this close to the route maxDuration (120s) so a killed foreground stream
 // does not block the conversation long after the route can no longer respond.
@@ -452,7 +455,16 @@ export async function getConversationMessagesForDisplay(params: {
   conversationId: string;
 }) {
   const messages = await getConversationMessages(params);
-  return dropEmptyAssistantMessages(dropUnpairedAssistantToolCalls(messages));
+  return dropEmptyAssistantMessages(
+    dropUnpairedAssistantToolCalls(messages),
+  ).map((message) =>
+    message.role === "tool"
+      ? {
+          ...message,
+          content: getPublicInAppAgentMcpToolResultContent(message.content),
+        }
+      : message,
+  );
 }
 
 export async function getConversationMessagesForReplay(params: {

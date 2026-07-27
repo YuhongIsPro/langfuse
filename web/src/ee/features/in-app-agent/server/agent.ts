@@ -25,7 +25,9 @@ import {
   createSandboxTools,
   createRedirectActionTool,
   filterInAppAgentAvailableLangfuseMcpTools,
+  getPublicInAppAgentMcpToolResultContent,
   type InAppAgentUserAccess,
+  withOptionalSilentMcpOutput,
   withInAppAgentToolApproval,
 } from "@/src/ee/features/in-app-agent/server/tools";
 import { LANGFUSE_IN_APP_AGENT_SKILLS } from "@/src/ee/features/in-app-agent/server/skills";
@@ -128,7 +130,7 @@ function formatSandboxContext(sandbox?: InAppAgentSandbox): string {
 <sandbox_filesystem>
 When working in the sandbox filesystem, assume this layout:
 - "/workspace" is the current working directory for normal file operations and shell commands.
-- "/workspace/tool_calls" contains all past tool calls and their outputs. Treat this directory as read-only. Any changes to it will be discarded before the next tool call.
+- "/workspace/tool_calls" contains all past tool calls and their outputs, including full results requested with the silent argument. Treat this directory as read-only; any changes to it will be discarded before the next tool call.
 </sandbox_filesystem>
 `;
 }
@@ -353,8 +355,19 @@ export async function createAgUiStream(params: {
               return;
             }
 
+            const publicEvent =
+              agUiEvent.type === EventType.TOOL_CALL_RESULT &&
+              typeof agUiEvent.content === "string"
+                ? {
+                    ...agUiEvent,
+                    content: getPublicInAppAgentMcpToolResultContent(
+                      agUiEvent.content,
+                    ),
+                  }
+                : agUiEvent;
+
             controller.enqueue(
-              encoder.encode(`data: ${JSON.stringify(agUiEvent)}\n\n`),
+              encoder.encode(`data: ${JSON.stringify(publicEvent)}\n\n`),
             );
           })
           .catch((error: unknown) => {
@@ -783,12 +796,21 @@ async function createMastraAdapter(params: {
     const tools = withInAppAgentToolApproval({
       ...prefixToolsetTools(
         "langfuse",
-        filterInAppAgentAvailableLangfuseMcpTools({
-          tools: toolsets.langfuse,
-          userAccess: params.options.langfuseMcp.userAccess,
+        withOptionalSilentMcpOutput({
+          tools: filterInAppAgentAvailableLangfuseMcpTools({
+            tools: toolsets.langfuse,
+            userAccess: params.options.langfuseMcp.userAccess,
+          }),
+          sandbox: params.options.sandbox,
         }),
       ),
-      ...prefixToolsetTools("langfuseDocs", toolsets.langfuseDocs),
+      ...prefixToolsetTools(
+        "langfuseDocs",
+        withOptionalSilentMcpOutput({
+          tools: toolsets.langfuseDocs,
+          sandbox: params.options.sandbox,
+        }),
+      ),
       [IN_APP_AGENT_REDIRECT_TOOL_NAME]: createRedirectActionTool({
         projectId: params.options.redirectAction.projectId,
         isV4Enabled: params.options.redirectAction.isV4Enabled,

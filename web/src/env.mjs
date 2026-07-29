@@ -550,6 +550,12 @@ export const env = createEnv({
     NEXT_PUBLIC_DEMO_PROJECT_ID: z.string().optional(),
     NEXT_PUBLIC_DEMO_ORG_ID: z.string().optional(),
     NEXT_PUBLIC_SIGN_UP_DISABLED: z.enum(["true", "false"]).default("false"),
+    // Signs in visitors as the seeded demo user automatically. Only for
+    // disposable environments with synthetic data and a public shared login,
+    // e.g. PR preview deployments (.github/workflows/preview-build.yml).
+    NEXT_PUBLIC_PREVIEW_DEMO_AUTO_SIGN_IN: z
+      .enum(["true", "false"])
+      .default("false"),
     NEXT_PUBLIC_POSTHOG_KEY: z.string().optional(),
     NEXT_PUBLIC_POSTHOG_HOST: z.string().optional(),
     NEXT_PUBLIC_PLAIN_APP_ID: z.string().optional(),
@@ -585,6 +591,8 @@ export const env = createEnv({
     NEXT_PUBLIC_LANGFUSE_BLOB_EXPORTER_CUTOFF:
       process.env.NEXT_PUBLIC_LANGFUSE_BLOB_EXPORTER_CUTOFF,
     NEXT_PUBLIC_SIGN_UP_DISABLED: process.env.NEXT_PUBLIC_SIGN_UP_DISABLED,
+    NEXT_PUBLIC_PREVIEW_DEMO_AUTO_SIGN_IN:
+      process.env.NEXT_PUBLIC_PREVIEW_DEMO_AUTO_SIGN_IN,
     LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES:
       process.env.LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES,
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,

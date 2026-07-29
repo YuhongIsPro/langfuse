@@ -1,4 +1,4 @@
-import React, { useMemo, useRef, useState } from "react";
+import React, { type ReactNode, useMemo, useRef, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChevronDown, Search } from "lucide-react";
 
@@ -113,6 +113,7 @@ export function ModernSessionObservationList(
         traces: EventSessionTrace[];
         activeTraceId: string | undefined;
         selectedTraceId: string | undefined;
+        filterControls?: ReactNode;
         renderObservationRows: ObservationListRowsRenderer;
         onSelect: (index: number) => void;
       },
@@ -186,8 +187,13 @@ export function ModernSessionObservationList(
     );
   }
 
-  const { activeTraceId, selectedTraceId, renderObservationRows, onSelect } =
-    props;
+  const {
+    activeTraceId,
+    selectedTraceId,
+    filterControls,
+    renderObservationRows,
+    onSelect,
+  } = props;
 
   return (
     <div
@@ -203,7 +209,7 @@ export function ModernSessionObservationList(
           {traces.length} traces, {totalSpanCount} spans
         </span>
       </div>
-      <div className="flex shrink-0 items-center border-b px-1 pt-2.5 pb-3">
+      <div className="flex shrink-0 flex-wrap items-center gap-1 border-b px-1 pt-2.5 pb-3">
         <div className="relative min-w-0 flex-1">
           <Search
             className="text-foreground-tertiary absolute top-1/2 left-2 h-3.5 w-3.5 -translate-y-1/2"
@@ -217,6 +223,7 @@ export function ModernSessionObservationList(
             className="h-7 rounded-sm bg-transparent pl-7 font-mono text-xs"
           />
         </div>
+        {filterControls}
       </div>
       <div
         ref={listRef}
